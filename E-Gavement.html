@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Urubuga rugufasha kumenya serivisi za Leta n'uko wazisaba.">
+  <title>Serivisi Rwanda — Serivisi za Leta kuri murandasi</title>
+  <style>
+    :root {
+      --green: #087443;
+      --dark: #12352b;
+      --muted: #62736c;
+      --light: #f3f8f5;
+      --border: #dce8e1;
+      --white: #fff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: var(--dark);
+      line-height: 1.6;
+      background: var(--white);
+    }
+    a { color: inherit; }
+    .container { width: min(1120px, 92%); margin: auto; }
+
+    .notice {
+      padding: 8px 0;
+      color: #fff;
+      background: var(--dark);
+      font-size: .88rem;
+      text-align: center;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .brand {
+      color: var(--green);
+      font-size: 1.3rem;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    nav { display: flex; gap: 24px; align-items: center; }
+    nav a { text-decoration: none; font-weight: 600; }
+    nav a:hover { color: var(--green); }
+    .button {
+      display: inline-block;
+      padding: 11px 18px;
+      border: 0;
+      border-radius: 7px;
+      color: white;
+      background: var(--green);
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .button:hover { background: #065d36; }
+    .menu-button { display: none; }
+
+    .hero {
+      padding: 76px 0;
+      background: linear-gradient(120deg, #edf7f0, #f8fbf9);
+    }
+    .hero-content { max-width: 720px; }
+    .eyebrow {
+      color: var(--green);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: .82rem;
+    }
+    h1 { margin: 10px 0; font-size: clamp(2.2rem, 5vw, 3.5rem); line-height: 1.12; }
+    .hero p { max-width: 620px; color: var(--muted); font-size: 1.1rem; }
+    .search {
+      display: flex;
+      gap: 10px;
+      max-width: 620px;
+      margin-top: 25px;
+    }
+    .search input {
+      flex: 1;
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid #b9cec1;
+      border-radius: 7px;
+      font-size: 1rem;
+    }
+
+    section { padding: 55px 0; }
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    h2 { margin: 0; font-size: 1.8rem; }
+    .muted { color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .card {
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+    }
+    .card:hover { border-color: #8cbba0; box-shadow: 0 8px 24px #12352b0d; }
+    .icon { font-size: 1.7rem; }
+    .card h3 { margin: 10px 0 5px; }
+    .card p { margin: 0 0 14px; color: var(--muted); }
+    .card a { color: var(--green); font-weight: 700; text-decoration: none; }
+    .empty { display: none; color: var(--muted); }
+
+    .help {
+      padding: 30px;
+      border-radius: 12px;
+      background: var(--light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+    footer {
+      padding: 25px 0;
+      color: #e7f1eb;
+      background: var(--dark);
+      font-size: .92rem;
+    }
+    footer p { margin: 4px 0; }
+
+    @media (max-width: 700px) {
+      .menu-button { display: inline-block; }
+      nav {
+        display: none;
+        position: absolute;
+        top: 112px;
+        left: 0;
+        right: 0;
+        padding: 20px 4%;
+        flex-direction: column;
+        align-items: flex-start;
+        background: white;
+        border-bottom: 1px solid var(--border);
+      }
+      nav.open { display: flex; }
+      .grid { grid-template-columns: 1fr; }
+      .hero { padding: 52px 0; }
+      .search, .help { flex-direction: column; align-items: stretch; }
+      .section-heading { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="notice">Urubuga rw’icyitegererezo — si urubuga rwa Leta rwemewe</div>
+
+  <header>
+    <div class="container nav">
+      <a class="brand" href="#">Serivisi Rwanda</a>
+      <button class="menu-button button" id="menuButton" aria-expanded="false"
+        aria-controls="mainNav">Menu</button>
+      <nav id="mainNav" aria-label="Menu nyamukuru">
+        <a href="#serivisi">Serivisi</a>
+        <a href="#uko-bikora">Uko bikora</a>
+        <a href="#ubufasha">Ubufasha</a>
+        <a class="button" href="#serivisi">Shaka serivisi</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-content">
+        <div class="eyebrow">Serivisi za Leta, ahantu hamwe</div>
+        <h1>Serivisi za Leta zoroheje kandi zegereye abaturage.</h1>
+        <p>
+          Menya serivisi ukeneye, ibisabwa n’intambwe wakurikiza.
+          Iyi prototype irerekana uko urubuga rwashyirwa mu Kinyarwanda.
+        </p>
+        <form class="search" id="searchForm" role="search">
+          <input id="searchInput" type="search"
+            placeholder="Urugero: ubuzima, ubucuruzi..."
+            aria-label="Shakisha serivisi">
+          <button class="button" type="submit">Shakisha</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="serivisi" class="container">
+      <div class="section-heading">
+        <div>
+          <h2>Serivisi zikunzwe</h2>
+          <div class="muted">Hitamo icyiciro kugira ngo umenye byinshi.</div>
+        </div>
+      </div>
+
+      <div class="grid" id="serviceGrid">
+        <article class="card" data-search="indangamuntu ibyangombwa">
+          <div class="icon" aria-hidden="true">📄</div>
+          <h3>Ibyangombwa</h3>
+          <p>Shaka amakuru ku byangombwa n’uko bisabwa.</p>
+          <a href="#ubufasha">Reba ibisobanuro →</a>
+        </article>
+        <article class="card" data-search="ubuzima kwivuza">
+          <div class="icon" aria-hidden="true">＋</div>
+          <h3>Ubuzima</h3>
+          <p>Menya amakuru ajyanye na serivisi z’ubuzima.</p>
+          <a href="#ubufasha">Reba ibisobanuro →</a>
+        </article>
+        <article class="card" data-search="ubucuruzi sosiyete">
+          <div class="icon" aria-hidden="true">▤</div>
+          <h3>Ubucuruzi</h3>
+          <p>Shaka amakuru rusange ku gutangiza ibikorwa by’ubucuruzi.</p>
+          <a href="#ubufasha">Reba ibisobanuro →</a>
+        </article>
+        <article class="card" data-search="uburezi ishuri">
+          <div class="icon" aria-hidden="true">▣</div>
+          <h3>Uburezi</h3>
+          <p>Menya serivisi n’amakuru ajyanye n’uburezi.</p>
+          <a href="#ubufasha">Reba ibisobanuro →</a>
+        </article>
+        <article class="card" data-search="ubutaka inzu">
+          <div class="icon" aria-hidden="true">⌂</div>
+          <h3>Ubutaka n’imiturire</h3>
+          <p>Reba amakuru ajyanye n’ubutaka n’imiturire.</p>
+          <a href="#ubufasha">Reba ibisobanuro →</a>
+        </article>
+        <article class="card" data-search="imisoro amafaranga">
+          <div class="icon" aria-hidden="true">◎</div>
+          <h3>Imisoro</h3>
+          <p>Shaka amakuru rusange ajyanye n’imisoro.</p>
+          <a href="#ubufasha">Reba ibisobanuro →</a>
+        </article>
+      </div>
+      <p class="empty" id="noResults">Nta serivisi ijyanye n’ijambo wanditse yabonetse.</p>
+    </section>
+
+    <section id="uko-bikora" class="container">
+      <div class="help">
+        <div>
+          <h2>Ukeneye ubufasha?</h2>
+          <p class="muted">Shyiraho amakuru y’itumanaho yemejwe n’ikigo kizakoresha uru rubuga.</p>
+        </div>
+        <a class="button" href="mailto:info@example.rw">Twandikire</a>
+      </div>
+    </section>
+  </main>
+
+  <footer id="ubufasha">
+    <div class="container">
+      <p><strong>Serivisi Rwanda</strong> — prototype y’urubuga rwa serivisi rusange.</p>
+      <p>Ntutange amakuru bwite kuri uru rubuga rw’icyitegererezo.</p>
+    </div>
+  </footer>
+
+  <script>
+    const menuButton = document.querySelector("#menuButton");
+    const mainNav = document.querySelector("#mainNav");
+
+    menuButton.addEventListener("click", () => {
+      const isOpen = mainNav.classList.toggle("open");
+      menuButton.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    document.querySelector("#searchForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const query = document.querySelector("#searchInput").value.trim().toLowerCase();
+      const cards = [...document.querySelectorAll(".card")];
+      let visibleCount = 0;
+
+      cards.forEach((card) => {
+        const matches = `${card.textContent} ${card.dataset.search}`
+          .toLowerCase().includes(query);
+        card.hidden = !matches;
+        if (matches) visibleCount++;
+      });
+
+      document.querySelector("#noResults").style.display =
+        visibleCount ? "none" : "block";
+    });
+  </script>
+</body>
+</html>
