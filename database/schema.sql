@@ -1,86 +1,112 @@
-CREATE DATABASE IF NOT EXISTS rwanda_ai_dss;
-USE rwanda_ai_dss;
+PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS services (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL UNIQUE,
-  count INT NOT NULL,
-  share INT NOT NULL,
-  color ENUM('green','ochre','blue','sage') NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  password_hash TEXT NOT NULL,
+  preferred_language TEXT NOT NULL DEFAULT 'kin'
+    CHECK (preferred_language IN ('kin', 'en')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS cases (
-  id VARCHAR(20) PRIMARY KEY,
-  service_id INT NOT NULL,
-  days_open INT NOT NULL,
-  target_days INT NOT NULL,
-  risk_level ENUM('High','Medium','Low') NOT NULL,
-  status VARCHAR(50) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (service_id) REFERENCES services(id)
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS case_factors (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  case_id VARCHAR(20) NOT NULL,
-  factor_label VARCHAR(100) NOT NULL,
-  factor_value VARCHAR(255) NOT NULL,
-  FOREIGN KEY (case_id) REFERENCES cases(id),
-  INDEX idx_case_factors_case_id (case_id)
+CREATE INDEX IF NOT EXISTS idx_sessions_expiration ON sessions(expires_at);
+
+CREATE TABLE IF NOT EXISTS categories (
+  id TEXT PRIMARY KEY,
+  name_en TEXT NOT NULL,
+  name_kin TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS reviews (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  case_id VARCHAR(20) NOT NULL,
-  note TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (case_id) REFERENCES cases(id),
-  INDEX idx_reviews_case_id (case_id)
+CREATE TABLE IF NOT EXISTS service_catalogue (
+  id TEXT PRIMARY KEY,
+  category_id TEXT NOT NULL REFERENCES categories(id),
+  title_en TEXT NOT NULL,
+  title_kin TEXT NOT NULL,
+  requirements_en TEXT NOT NULL,
+  requirements_kin TEXT NOT NULL,
+  fee_rwf INTEGER NOT NULL CHECK (fee_rwf >= 0),
+  processing_days INTEGER NOT NULL CHECK (processing_days >= 0),
+  irembo_url TEXT NOT NULL,
+  verification_status TEXT NOT NULL DEFAULT 'unverified'
+    CHECK (verification_status IN ('unverified', 'verified')),
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO services (name, count, share, color) VALUES
-  ('Business registration', 412, 32, 'green'),
-  ('Land administration', 338, 26, 'ochre'),
-  ('Permit applications', 291, 23, 'blue'),
-  ('Civil documentation', 243, 19, 'sage')
-ON DUPLICATE KEY UPDATE
-  count = VALUES(count),
-  share = VALUES(share),
-  color = VALUES(color);
+CREATE TABLE IF NOT EXISTS service_activity (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  service_id TEXT NOT NULL REFERENCES service_catalogue(id) ON DELETE CASCADE,
+  action TEXT NOT NULL CHECK (action = 'irembo_link_opened'),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
-INSERT INTO cases (id, service_id, days_open, target_days, risk_level, status) VALUES
-  ('RW-BR-2048', 1, 18, 14, 'High', 'Awaiting review'),
-  ('RW-LA-1982', 2, 12, 15, 'Medium', 'In progress'),
-  ('RW-PA-2156', 3, 21, 20, 'High', 'Awaiting documents'),
-  ('RW-CD-1874', 4, 6, 10, 'Low', 'In progress'),
-  ('RW-BR-2091', 1, 15, 14, 'Medium', 'In progress'),
-  ('RW-LA-2015', 2, 23, 15, 'High', 'Awaiting review')
-ON DUPLICATE KEY UPDATE
-  service_id = VALUES(service_id),
-  days_open = VALUES(days_open),
-  target_days = VALUES(target_days),
-  risk_level = VALUES(risk_level),
-  status = VALUES(status);
+CREATE INDEX IF NOT EXISTS idx_service_activity_user_created
+  ON service_activity(user_id, created_at DESC);
 
-INSERT INTO case_factors (case_id, factor_label, factor_value) VALUES
-  ('RW-BR-2048', 'Time against target', '4 days overdue'),
-  ('RW-BR-2048', 'Open workload', 'Above weekly range'),
-  ('RW-BR-2048', 'Data confidence', 'Moderate'),
-  ('RW-LA-1982', 'Time against target', '3 days remaining'),
-  ('RW-LA-1982', 'Open workload', 'Elevated'),
-  ('RW-LA-1982', 'Data confidence', 'Moderate'),
-  ('RW-PA-2156', 'Time against target', '1 day overdue'),
-  ('RW-PA-2156', 'Queue volume', 'Above weekly range'),
-  ('RW-PA-2156', 'Data confidence', 'Low'),
-  ('RW-CD-1874', 'Time against target', '4 days remaining'),
-  ('RW-CD-1874', 'Open workload', 'Within weekly range'),
-  ('RW-CD-1874', 'Data confidence', 'High'),
-  ('RW-BR-2091', 'Time against target', '1 day overdue'),
-  ('RW-BR-2091', 'Open workload', 'Above weekly range'),
-  ('RW-BR-2091', 'Data confidence', 'Moderate'),
-  ('RW-LA-2015', 'Time against target', '8 days overdue'),
-  ('RW-LA-2015', 'Open workload', 'Elevated'),
-  ('RW-LA-2015', 'Data confidence', 'Moderate')
-ON DUPLICATE KEY UPDATE
-  factor_value = VALUES(factor_value);
+INSERT INTO categories (id, name_en, name_kin) VALUES
+  ('GOV_CIVIL', 'Civil Status & Identification', 'Ibyerekeye irangamimerere n’indangamuntu'),
+  ('JUSTICE', 'Justice & Legal Affairs', 'Ubutabera n’amategeko'),
+  ('TRANSPORT', 'Transport & Vehicles', 'Ibinyabiziga n’ingendo'),
+  ('LAND', 'Land Registration', 'Ibyerekeye ubutaka')
+ON CONFLICT(id) DO UPDATE SET
+  name_en = excluded.name_en,
+  name_kin = excluded.name_kin;
+
+INSERT INTO service_catalogue (
+  id, category_id, title_en, title_kin,
+  requirements_en, requirements_kin,
+  fee_rwf, processing_days, irembo_url, verification_status
+) VALUES
+  (
+    'SRV_CRIM_01', 'JUSTICE',
+    'Criminal Record Certificate', 'Icyemezo cy’uko umuntu atahamwe n’icyaha',
+    'Valid National ID or Passport; phone number or email.',
+    'Indangamuntu cyangwa pasiporo yemewe; nomero ya telefone cyangwa imeli.',
+    1200, 1, 'https://irembo.gov.rw/home/citizen/all_services', 'unverified'
+  ),
+  (
+    'SRV_BIRTH_01', 'GOV_CIVIL',
+    'Birth Certificate', 'Icyemezo cy’amavuko',
+    'Child details; National ID numbers of parents.',
+    'Amakuru y’umwana; nomero z’indangamuntu z’ababyeyi.',
+    500, 1, 'https://irembo.gov.rw/home/citizen/all_services', 'unverified'
+  ),
+  (
+    'SRV_DRIVE_PROV', 'TRANSPORT',
+    'Provisional Driving License Exam', 'Ikizamini cy’uruhushya rw’agateganyo rwo gutwara ibinyabiziga',
+    'Age 18+; National ID card; valid phone number.',
+    'Kuba ufite nibura imyaka 18; indangamuntu; nomero ya telefone ikora.',
+    5000, 1, 'https://irembo.gov.rw/home/citizen/all_services', 'unverified'
+  ),
+  (
+    'SRV_DRIVE_PERM', 'TRANSPORT',
+    'Permanent Driving License Registration', 'Kwiyandikisha ku ruhushya rwa burundu rwo gutwara ibinyabiziga',
+    'Passed provisional test record; passport photo metadata.',
+    'Icyemezo cy’uko watsinze ikizamini cy’agateganyo; amakuru ajyanye n’ifoto ya pasiporo.',
+    50000, 14, 'https://irembo.gov.rw/home/citizen/all_services', 'unverified'
+  ),
+  (
+    'SRV_LAND_TRANS', 'LAND',
+    'Voluntary Land Title Transfer', 'Ihererekanya ry’uburenganzira ku butaka ku bushake',
+    'Unique UPI number; National ID of both buyer and seller.',
+    'Nomero yihariye y’ubutaka (UPI); indangamuntu z’umuguzi n’ugurisha.',
+    27000, 7, 'https://irembo.gov.rw/home/citizen/all_services', 'unverified'
+  )
+ON CONFLICT(id) DO UPDATE SET
+  category_id = excluded.category_id,
+  title_en = excluded.title_en,
+  title_kin = excluded.title_kin,
+  requirements_en = excluded.requirements_en,
+  requirements_kin = excluded.requirements_kin,
+  fee_rwf = excluded.fee_rwf,
+  processing_days = excluded.processing_days,
+  irembo_url = excluded.irembo_url,
+  verification_status = excluded.verification_status,
+  updated_at = CURRENT_TIMESTAMP;
