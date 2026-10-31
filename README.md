@@ -1,10 +1,10 @@
-# Imboni | Katalogi y'icyitegererezo ya serivisi zo mu Rwanda
+# Kora | Business Control Room
 
-Imboni ni porototipi yigenga ya React, TypeScript na Vite. Igaragaza mu Kinyarwanda cyangwa Icyongereza serivisi eshanu z’icyitegererezo zabitswe muri SQLite. Iyi si katalogi yuzuye ya IremboGov, kandi Imboni ntifitanye isano na IremboGov cyangwa Leta y’u Rwanda.
+Kora is a React, TypeScript, and Vite dashboard prototype for reviewing example financial, sales and marketing, operations, team, and strategic-growth indicators. Every figure and activity shown in the dashboard is synthetic sample data. The prototype is not connected to a business, accounting, customer, staff, or other live system and must not be used to make operational or financial decisions.
 
 ## Run locally
 
-Requirements: Node.js 22.13+ and npm. The local API uses Node's built-in SQLite support.
+Requirements: Node.js 22.13+ and npm.
 
 ```bash
 npm install
@@ -13,28 +13,43 @@ npm run dev
 
 Open `http://127.0.0.1:5173`. In Windows PowerShell, use `npm.cmd install` and `npm.cmd run dev` if script execution policy blocks `npm`.
 
-## Available commands
+## Dashboard prototype
 
-- `npm run dev` — start the local API, SQLite database, and Vite development server.
-- `npm run build` — type-check the app and create a production build in `dist/`.
-- `npm run preview` — serve the production build and API locally after building.
-- `npm run start` — start the production server; run `npm run build` first.
+- Review synthetic revenue, pipeline, operating-margin, and satisfaction indicators.
+- Change the chart's displayed time period and explore the financial, sales, operations, team, and growth sections.
+- Export a CSV containing clearly illustrative sample metrics.
+- Use the responsive navigation on smaller screens.
 
-## Konti z'igerageza na SQLite
+The indicators, team labels, activities, objectives, and exported report are hard-coded examples. They do not represent verified business performance, real people, or real organizations, and they are not personalized or connected to live services. Dashboard access uses the existing SQLite-backed account API: users can register with a name, email, and password or sign in with an existing account. Passwords are stored as scrypt hashes and sign-in sessions use an HttpOnly cookie. The account feature is a prototype, not a production identity system. Use synthetic test names, email addresses, and passwords only; do not enter real financial, customer, staff, citizen, or other sensitive information.
 
-Kwiyandikisha no kwinjira bikoresha SQLite ibitse kuri `data/imboni.sqlite`; imiterere n'amakuru y'icyitegererezo biri muri `database/schema.sql` kandi bitangizwa na server. Katalogi ibika ibyiciro n'amakuru ya serivisi mu ndimi ebyiri (Icyongereza n'Ikinyarwanda), amafaranga, igihe cyatanzwe nk'urugero, aho serivisi iboneka kuri IremboGov, n'uko amakuru yagenzuwe. Konti zibika amazina, imeli, ururimi rwatoranyijwe n'ijambo ry'ibanga ryabitswe nka scrypt hash. Konti yinjiyemo ibika amateka y'imirongo yafunguye gusa (ntibika ubusabe bwa serivisi). Amakuru y'igihe cyose arakomeza kubaho iyo porogaramu yongeye gutangizwa; ububiko bwa data ntibushyirwa muri Git. Shyiraho `DATABASE_PATH` kugira ngo uhitemo ahandi ububiko bwa SQLite.
+## Existing demo components
 
-Ibyo bisabwa, amafaranga n'iminsi byatanzwe mu ngero ntabwo byagenzuwe; ntibifatwe nk'amakuru yemewe. Banza ugenzure kuri IremboGov cyangwa ku rwego rubishinzwe. Koresha amazina, imeli n'amagambo y'ibanga by'igerageza gusa. Ntukinjize nomero z'indangamuntu, inyandiko z'ubusabe cyangwa andi makuru bwite. Kanda kuri IremboGov kugira ngo usabe serivisi; Imboni ibika gusa amateka y'imirongo ya IremboGov yafunguwe n'umukoresha winjiye, ntimenya niba ubusabe bwarangijwe cyangwa bwaratanzwe. Amakuru yo muri SQLite ntabwo abikwa mu buryo bwabugenewe bwo kurinda amakuru ari kuri disiki kandi iyi porototipi ntigenewe konti z'umusaruro. Gushyira porogaramu ku rubuga bisaba HTTPS, igenzura ry'umutekano n'iry'ibanga, gukurikirana sisitemu, backup, n'ubuyobozi bwemewe bwa database.
+The Node server and SQLite database in this repository retain the earlier Imboni public-service catalogue API and sample records. They are not connected to the Kora dashboard UI. The catalogue's records are illustrative and are not official or verified information. Its API still supports account registration and sign-in; use synthetic test names, email addresses, and passwords only. The SQLite database stores account details and password hashes, and the server can record opened catalogue links. Do not enter identity numbers, application documents, or other personal or sensitive information. The local database is not configured for production-grade protection.
 
-## Ibyo porototipi ikora
+The sample catalogue is initialized from `database/schema.sql` in `data/imboni.sqlite`. Set `DATABASE_PATH` to choose another SQLite file. The data directory is not intended for committing database files.
 
-- Hindura ururimi hagati y'Ikinyarwanda n'Icyongereza; shakisha serivisi cyangwa uyungurure hakurikijwe icyiciro.
-- Reba amakuru y'icyitegererezo abitswe muri SQLite. Katalogi irimo serivisi eshanu gusa zatanzwe n'uyu mushinga; ntabwo ari urutonde rwuzuye rwa IremboGov.
-- Fungura IremboGov mu rundi rubuga kugira ngo ushake cyangwa usabe serivisi. Katalogi y'ubu ikoresha umurongo rusange wa IremboGov, si urubuga rwihariye rwa serivisi.
-- Fungura konti y'igerageza, winjire cyangwa usohoke; konti ihitamo ishobora kureba amateka y'imirongo yafunguye. Ibyo ntibyerekana ko ubusabe bwatanzwe.
+## Host a public demo on Render
 
-## Iby'ingenzi
+The included `render.yaml` defines a Node web service with persistent SQLite storage. Connect this repository to Render and create a Blueprint from it to deploy. Review the selected service and disk pricing before applying the Blueprint; persistent storage may incur charges.
 
-Iyi ni porototipi yigenga, si urubuga rwemewe rwa IremboGov cyangwa urwego rwa Leta. Ihuza serivisi ku rubuga rwa IremboGov gusa; nta API cyangwa uburyo bwo kohereza ubusabe buhujwe na Leta. Imboni ntibika amakuru y'amafishi y'ubusabe, ntiyakira ubwishyu cyangwa inyandiko, kandi ntimenya uko dosiye zihagaze. Emeza serivisi, ibisabwa, amafaranga n'igihe n'urwego rubishinzwe.
+The hosted database is initialized with the synthetic catalogue sample from `database/schema.sql`; it does not upload or copy your local `data/imboni.sqlite`. The Kora dashboard still uses hard-coded sample data and is not connected to the hosted database or its catalogue API. This project has not been reviewed or configured for production use with real personal data. Before exposing any of the legacy account or catalogue functionality, obtain appropriate security and privacy reviews and configure secure transport, storage, backups, monitoring, and database access controls.
 
-Gushyira ku mugaragaro serivisi nyakuri bisaba uburenganzira, ubufatanye n'abatanga serivisi, amakuru yemejwe kandi ahora avugururwa, igenamigambi ry'umutekano n'iry'ibanga, gupima ko abantu bose bashobora kuyikoresha, n'ubuyobozi buhamye bwa backend.
+The separate `voting/` folder contains a local Flask demonstration of a registration, sign-in, age-eligibility, and one-time sample ballot flow. It is not connected to the Kora dashboard or the Node server. Candidate names and ballot records are synthetic; this is not an official voting service or secure election system.
+
+To run it locally, install Flask with `python -m pip install -r voting/requirements.txt`, then start it with `python voting/app.py`. Open `http://127.0.0.1:5000`. Accounts must be at least 18 years old to open or submit a ballot; age is checked on the server. Candidate names and votes are synthetic examples stored in `voting/voting.sqlite3`. To run its tests, use `python -m unittest discover -s voting -p "test_*.py"`. Before any deployment, configure a strong `FLASK_SECRET_KEY`, enable HTTPS and secure cookies with `COOKIE_SECURE=true`, and obtain appropriate security, privacy, accessibility, and legal reviews.
+
+## Build
+
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run start
+```
+
+- `npm run dev` starts the local API, SQLite database, and Vite development server.
+- `npm run build` type-checks the app and creates a production build in `dist/`.
+- `npm run preview` serves the production build and API locally after building.
+- `npm run start` starts the production server; run `npm run build` first.
+
+A successful build does not make this prototype suitable for production use. Real integrations or real financial, customer, staff, or citizen data require explicit authorization, suitable privacy and security design, accessibility review, and validation of every data source.

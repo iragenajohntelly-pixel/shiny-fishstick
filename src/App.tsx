@@ -1,202 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
-type Language = "kin" | "en";
-type Category = { id: string; name_en: string; name_kin: string };
-type Service = {
-  id: string;
-  category_id: string;
-  category_en: string;
-  category_kin: string;
-  title_en: string;
-  title_kin: string;
-  requirements_en: string;
-  requirements_kin: string;
-  fee_rwf: number;
-  processing_days: number;
-  irembo_url: string;
-  verification_status: "unverified" | "verified";
-};
-type AuthUser = { id: number; name: string; email: string; preferred_language: Language };
-type ServiceActivity = { id: number; service_id: string; title_en: string; title_kin: string; created_at: string };
-
-const labels = {
-  kin: {
-    language: "Ururimi",
-    services: "Serivisi",
-    howItWorks: "Uko bikora",
-    help: "Ubufasha",
-    signIn: "Injira",
-    signOut: "Sohoka",
-    createAccount: "Fungura konti",
-    prototype: "Porototipi",
-    eyebrow: "SERIVISI ZA LETA, ZISOBANUTSE",
-    titleFirst: "Serivisi za leta.",
-    titleSecond: "Ahantu hamwe.",
-    intro: "Shakisha serivisi rusange, urebe amakuru y’icyitegererezo, hanyuma ukomeze kuri IremboGov kugira ngo urebe amabwiriza agezweho.",
-    search: "Ni iyihe serivisi ushaka?",
-    find: "Shakisha",
-    independent: "Imboni yigenga; ntifitanye isano na IremboGov cyangwa Leta y’u Rwanda.",
-    startHere: "TANGIRA HANO",
-    unsure: "Nturaramenya aho uhera?",
-    aside: "Hitamo serivisi urebe amakuru y’icyitegererezo. Gusaba bikorwa kuri IremboGov.",
-    browse: "Reba serivisi",
-    demoOnly: "Amakuru ni urugero; banza uyagenzure.",
-    accurate: "Amakuru y’icyitegererezo",
-    accurateSub: "Ntaremezwa n’inzego zibishinzwe",
-    local: "Katalogi ibitswe muri mudasobwa",
-    localSub: "Serivisi zigaragara utiriwe ubaza Irembo",
-    safe: "Umutekano wawe",
-    safeSub: "Ntushyire amakuru bwite muri Imboni",
-    browseByNeed: "SHAKISHA UKO UBISHAKA",
-    sectionTitle: "Ni iyihe serivisi ukeneye?",
-    sectionDescription: "Aya ni amakuru make y’icyitegererezo, si urutonde rwuzuye rwa serivisi za IremboGov.",
-    allServices: "Serivisi zose",
-    resultCount: "serivisi",
-    loading: "Serivisi zirimo gufunguka…",
-    loadError: "Serivisi ntizifungutse",
-    tryAgain: "Ongera ugerageze",
-    noResults: "Nta serivisi ihuye n’ibyo ushaka",
-    trySearch: "Gerageza irindi jambo cyangwa urebe serivisi zose.",
-    noData: "Nta makuru ya serivisi aboneka.",
-    category: "Icyiciro",
-    requirements: "Ibisabwa (amakuru y’icyitegererezo)",
-    estimate: "Amafaranga n’igihe (ntibyagenzuwe)",
-    rwf: "RWF",
-    day: "umunsi",
-    days: "iminsi",
-    unverified: "NTIBYAGENZUWE",
-    warningTitle: "Icyitonderwa: amakuru ntaremezwa",
-    warningText: "Ibisabwa, amafaranga n’igihe byatanzwe hano ntibyagenzuwe kandi bishobora kuba bitari byo cyangwa byarahindutse. Banza urebe amakuru agezweho kuri IremboGov cyangwa ku rwego rubifitiye ububasha. Imboni ntisaba cyangwa ngo ibike nomero z’indangamuntu, ibyangombwa, ubwishyu cyangwa dosiye za serivisi.",
-    howTitle: "Komeza gusaba serivisi kuri IremboGov",
-    howDescription: "Imboni igufasha gushakisha. Gusaba serivisi nyirizina bikorwa ku rubuga rwemewe rwa IremboGov.",
-    stepOne: "Shakisha serivisi",
-    stepOneText: "Koresha amagambo yo gushakisha cyangwa ibyiciro biri muri katalogi ibitswe hano.",
-    stepTwo: "Genzura amakuru",
-    stepTwoText: "Amakuru agaragara hano ni ingero; genzura ibisabwa n’amafaranga kuri IremboGov.",
-    stepThree: "Komeza kuri IremboGov",
-    stepThreeText: "Fungura urubuga rwa IremboGov kugira ngo ubone serivisi kandi utangize ubusabe.",
-    needHelp: "UKENEYE UBUNDI BUFASHA?",
-    helpTitle: "Koresha urubuga rwemewe ku busabe nyakuri.",
-    helpText: "Imboni ntitanga serivisi za Leta, ntishyikiriza Leta ubusabe, kandi ntikurikirana dosiye.",
-    back: "Subira kuri serivisi",
-    footer: "Imboni — porototipi yigenga y’amakuru kuri serivisi rusange mu Rwanda.",
-    notAffiliated: "Ntabwo ifitanye isano na IremboGov cyangwa urwego urwo ari rwo rwose rwa Leta.",
-    account: "Konti ya Imboni",
-    welcome: "Murakaza neza",
-    name: "Amazina",
-    email: "Imeli",
-    password: "Ijambo ry’ibanga",
-    confirmPassword: "Emeza ijambo ry’ibanga",
-    passwordHelp: "Koresha inyuguti nibura 12.",
-    accountSafety: "Koresha amakuru y’igerageza gusa. Ntukoreshe konti nyayo kandi ntushyiremo nomero y’indangamuntu cyangwa andi makuru y’ibanga.",
-    create: "Fungura konti",
-    wait: "Tegereza gato…",
-    alreadyAccount: "Usanzwe ufite konti?",
-    newAccount: "Nta konti ufite?",
-    passwordMismatch: "Amagambo y’ibanga ntahura.",
-    accountReady: "Konti ya porototipi yiteguye.",
-    signedOut: "Wasohotse muri konti.",
-    accountFailed: "Igikorwa cya konti nticyakunze.",
-    openIrembo: "Komeza kuri IremboGov",
-    externalNote: "IremboGov izafunguka mu rubuga rushya. Imboni ntimenya niba ubusabe bwatanzwe.",
-    catalogueTitle: "Katalogi y’icyitegererezo",
-    welcomeUser: "Muraho",
-    history: "Amateka",
-    historyTitle: "Amateka yo gufungura IremboGov",
-    historyEmpty: "Nta murongo wafunguye urabikwa.",
-    historyNote: "Ibi byerekana ko wafunguye umurongo gusa; Imboni ntimenya niba warangije cyangwa watanze ubusabe kuri IremboGov.",
-    linkOpened: "Umurongo wafunguwe",
-  },
-  en: {
-    language: "Language",
-    services: "Services",
-    howItWorks: "How it works",
-    help: "Help",
-    signIn: "Sign in",
-    signOut: "Sign out",
-    createAccount: "Create account",
-    prototype: "Prototype",
-    eyebrow: "PUBLIC SERVICES, MADE CLEAR",
-    titleFirst: "Everyday services.",
-    titleSecond: "One helpful place.",
-    intro: "Browse example public-service listings, then continue to IremboGov to check current official details.",
-    search: "What service are you looking for?",
-    find: "Find services",
-    independent: "Independent Imboni prototype; not affiliated with IremboGov or the Government of Rwanda.",
-    startHere: "START HERE",
-    unsure: "Not sure where to begin?",
-    aside: "Choose a service to view example information. Applications take place on IremboGov.",
-    browse: "Browse services",
-    demoOnly: "Example information; verify before use.",
-    accurate: "Example information",
-    accurateSub: "Not verified by responsible authorities",
-    local: "Locally stored catalogue",
-    localSub: "Browse without querying Irembo",
-    safe: "Your privacy",
-    safeSub: "Do not enter personal details in Imboni",
-    browseByNeed: "BROWSE BY NEED",
-    sectionTitle: "Which service do you need?",
-    sectionDescription: "These are a few example records, not a complete IremboGov service catalogue.",
-    allServices: "All services",
-    resultCount: "services",
-    loading: "Loading services…",
-    loadError: "Services could not be loaded",
-    tryAgain: "Try again",
-    noResults: "No matching services found",
-    trySearch: "Try another search or browse all services.",
-    noData: "No service information is available.",
-    category: "Category",
-    requirements: "Requirements (example information)",
-    estimate: "Fee and processing time (unverified)",
-    rwf: "RWF",
-    day: "day",
-    days: "days",
-    unverified: "UNVERIFIED",
-    warningTitle: "Please note: information is unverified",
-    warningText: "Requirements, fees, and processing times shown here were supplied as examples and have not been verified; they may be inaccurate or outdated. Check current information on IremboGov or with the responsible authority. Imboni does not collect or store national ID numbers, documents, payments, or service applications.",
-    howTitle: "Continue service applications on IremboGov",
-    howDescription: "Imboni helps you browse. Actual service applications take place on the official IremboGov website.",
-    stepOne: "Find a service",
-    stepOneText: "Search or browse categories in this locally stored catalogue.",
-    stepTwo: "Verify the details",
-    stepTwoText: "The information here is illustrative; confirm requirements and fees on IremboGov.",
-    stepThree: "Continue to IremboGov",
-    stepThreeText: "Open IremboGov to locate the service and start an application.",
-    needHelp: "NEED MORE HELP?",
-    helpTitle: "Use official channels for real requests.",
-    helpText: "Imboni does not provide government services, submit applications, or track cases.",
-    back: "Back to services",
-    footer: "Imboni — independent public-service information prototype for Rwanda.",
-    notAffiliated: "Not affiliated with IremboGov or any government agency.",
-    account: "Imboni demo account",
-    welcome: "Welcome back",
-    name: "Full name",
-    email: "Email address",
-    password: "Password",
-    confirmPassword: "Confirm password",
-    passwordHelp: "Use at least 12 characters.",
-    accountSafety: "Use synthetic test details only. Do not use a real account or enter a national ID number or other sensitive information.",
-    create: "Create account",
-    wait: "Please wait…",
-    alreadyAccount: "Already have an account?",
-    newAccount: "New to the demo?",
-    passwordMismatch: "The passwords do not match.",
-    accountReady: "Your demo account is ready.",
-    signedOut: "You have signed out.",
-    accountFailed: "The account request could not be completed.",
-    openIrembo: "Continue to IremboGov",
-    externalNote: "IremboGov opens in a new tab. Imboni cannot tell whether you submitted an application.",
-    catalogueTitle: "Example catalogue",
-    welcomeUser: "Hello",
-    history: "History",
-    historyTitle: "IremboGov link history",
-    historyEmpty: "No opened service links have been recorded.",
-    historyNote: "This records only that you opened a link. Imboni cannot tell whether you completed or submitted an application on IremboGov.",
-    linkOpened: "Link opened",
-  },
-} as const;
-
-const iremboCatalogueUrl = "https://irembo.gov.rw/home/citizen/all_services";
+type IconName = "grid" | "wallet" | "chart" | "activity" | "users" | "compass" | "settings" | "search" | "bell" | "arrow" | "download" | "clock" | "menu" | "close";
+type AuthUser = { id: number; name: string; email: string; preferred_language: "kin" | "en" };
 
 async function requestJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
@@ -214,116 +19,145 @@ async function requestJson<T>(path: string, options: RequestInit = {}): Promise<
   return result as T;
 }
 
+function getInitials(name: string) {
+  return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() || "").join("");
+}
+
+function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
+  const paths: Record<IconName, React.ReactNode> = {
+    grid: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></>,
+    wallet: <><rect x="3" y="5" width="18" height="15" rx="2" /><path d="M3 9h18M16 15h2" /><path d="M6 5V4a2 2 0 0 1 2-2h10" /></>,
+    chart: <><path d="M3 3v18h18" /><path d="m7 14 4-4 3 3 6-7" /><path d="M16 6h4v4" /></>,
+    activity: <><path d="M3 12h4l3-8 4 16 3-8h4" /></>,
+    users: <><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="10" cy="7" r="4" /><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
+    compass: <><circle cx="12" cy="12" r="10" /><path d="m16.2 7.8-2.1 6.3-6.3 2.1 2.1-6.3 6.3-2.1Z" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 2Z" transform="translate(-1 -1) scale(1.08)" /></>,
+    search: <><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4 4" /></>,
+    bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></>,
+    arrow: <><path d="M7 17 17 7M7 7h10v10" /></>,
+    download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5M12 15V3" /></>,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+    menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>,
+    close: <><path d="m18 6-12 12M6 6l12 12" /></>,
+  };
+  return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
+}
+
+const navigation: { name: string; icon: IconName; href: string }[] = [
+  { name: "Overview", icon: "grid", href: "#overview" },
+  { name: "Financials", icon: "wallet", href: "#financials" },
+  { name: "Sales & marketing", icon: "chart", href: "#sales" },
+  { name: "Operations", icon: "activity", href: "#operations" },
+  { name: "Team", icon: "users", href: "#team" },
+  { name: "Strategic growth", icon: "compass", href: "#growth" },
+];
+
+const kpis = [
+  { label: "Total revenue", value: "RWF 48.2M", change: "+12.8%", note: "vs. previous period", icon: "wallet" as const, tone: "green" },
+  { label: "Sales pipeline", value: "RWF 126.4M", change: "+8.4%", note: "24 active opportunities", icon: "chart" as const, tone: "blue" },
+  { label: "Operating margin", value: "24.6%", change: "+2.1 pts", note: "vs. previous period", icon: "activity" as const, tone: "violet" },
+  { label: "Customer satisfaction", value: "92.4%", change: "+3.6%", note: "from 386 responses", icon: "users" as const, tone: "orange" },
+];
+
+const trendValues: Record<string, number[]> = {
+  "7 days": [34, 41, 38, 53, 48, 65, 59, 71, 66, 78, 70, 88],
+  "30 days": [32, 38, 35, 49, 45, 59, 54, 68, 61, 75, 69, 84],
+  "90 days": [27, 35, 31, 42, 40, 54, 50, 61, 58, 68, 64, 78],
+};
+
+const activities = [
+  { initials: "MK", title: "Marketing campaign launched", detail: "Brand awareness · Kigali", time: "12 min ago", color: "lavender" },
+  { initials: "JN", title: "Quarterly forecast updated", detail: "Finance · Q4 outlook", time: "48 min ago", color: "mint" },
+  { initials: "AK", title: "New opportunity added", detail: "Sales · Inyange Partners", time: "2 hours ago", color: "peach" },
+];
+
+const team = [
+  { initials: "UW", name: "Umutoni W.", role: "Sales lead", progress: 84, color: "mint" },
+  { initials: "DK", name: "Diane K.", role: "Marketing", progress: 72, color: "lavender" },
+  { initials: "PN", name: "Patrick N.", role: "Operations", progress: 91, color: "peach" },
+];
+
 function App() {
-  const [language, setLanguage] = useState<Language>("kin");
-  const text = labels[language];
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("");
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [serviceLoading, setServiceLoading] = useState(true);
-  const [serviceError, setServiceError] = useState("");
-  const [selected, setSelected] = useState<Service | null>(null);
-  const [toast, setToast] = useState("");
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [authMode, setAuthMode] = useState<"login" | "register" | null>(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [activity, setActivity] = useState<ServiceActivity[]>([]);
-  const [activityError, setActivityError] = useState("");
-  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authBusy, setAuthBusy] = useState(false);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const authCloseRef = useRef<HTMLButtonElement>(null);
-  const historyCloseRef = useRef<HTMLButtonElement>(null);
-  const filteredServices = useMemo(() => services.filter((service) => {
-    const matchesCategory = !category || service.category_id === category;
-    const searchText = [
-      service.title_en, service.title_kin, service.category_en, service.category_kin,
-      service.requirements_en, service.requirements_kin,
-    ].join(" ").toLowerCase();
-    return matchesCategory && searchText.includes(query.trim().toLowerCase());
-  }), [category, query, services]);
+  const [authError, setAuthError] = useState("");
+  const [period, setPeriod] = useState("30 days");
+  const [activeNav, setActiveNav] = useState("Overview");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     let active = true;
     requestJson<{ user: AuthUser | null }>("/api/auth/me")
       .then(({ user: currentUser }) => {
-        if (!active) return;
-        setUser(currentUser);
-        if (currentUser) setLanguage(currentUser.preferred_language);
+        if (active) setUser(currentUser);
       })
-      .catch((error: unknown) => { if (active) setToast(error instanceof Error ? error.message : text.accountFailed); });
-    requestJson<Service[]>("/api/catalogue")
-      .then((items) => {
-        if (!active) return;
-        setServices(items);
-        setCategories(Array.from(new Map(items.map((item) => [item.category_id, {
-          id: item.category_id,
-          name_en: item.category_en,
-          name_kin: item.category_kin,
-        }])).values()));
+      .catch((error: unknown) => {
+        if (active) setAuthError(error instanceof Error ? error.message : "Could not check your sign-in status.");
       })
-      .catch((error: unknown) => { if (active) setServiceError(error instanceof Error ? error.message : text.loadError); })
-      .finally(() => { if (active) setServiceLoading(false); });
+      .finally(() => {
+        if (active) setAuthLoading(false);
+      });
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {
-    document.documentElement.lang = language === "kin" ? "rw" : "en";
-  }, [language]);
+  const chartPoints = useMemo(() => {
+    const values = trendValues[period];
+    return values.map((value, index) => `${24 + index * 55},${176 - value * 1.48}`).join(" ");
+  }, [period]);
 
-  useEffect(() => {
-    if (!toast) return;
-    const timeout = window.setTimeout(() => setToast(""), 3500);
-    return () => window.clearTimeout(timeout);
-  }, [toast]);
+  function exportReport() {
+    const rows = [
+      ["Metric", "Synthetic value", "Change"],
+      ["Total revenue", "RWF 48.2M", "+12.8%"],
+      ["Sales pipeline", "RWF 126.4M", "+8.4%"],
+      ["Operating margin", "24.6%", "+2.1 pts"],
+      ["Customer satisfaction", "92.4%", "+3.6%"],
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "control-room-synthetic-report.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
-  useEffect(() => {
-    if (!selected && !authMode && !historyOpen) return;
-    if (selected) closeRef.current?.focus();
-    if (authMode) authCloseRef.current?.focus();
-    if (historyOpen) historyCloseRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setSelected(null);
-        setAuthMode(null);
-        setHistoryOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selected, authMode, historyOpen]);
+  function selectNavigation(name: string) {
+    setActiveNav(name);
+    setMobileNavOpen(false);
+  }
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!authMode || authBusy) return;
-    setAuthError("");
+    if (authBusy) return;
     setAuthBusy(true);
-    const form = event.currentTarget;
-    const formData = new FormData(form);
+    setAuthError("");
+    const formData = new FormData(event.currentTarget);
     const password = String(formData.get("password") || "");
     if (authMode === "register" && password !== String(formData.get("confirmPassword") || "")) {
-      setAuthError(text.passwordMismatch);
+      setAuthError("The passwords do not match.");
       setAuthBusy(false);
       return;
     }
-    const body = {
-      email: String(formData.get("email") || ""),
-      password,
-      ...(authMode === "register" ? { name: String(formData.get("name") || "") } : {}),
-    };
+
     try {
+      const body = {
+        email: String(formData.get("email") || ""),
+        password,
+        ...(authMode === "register" ? { name: String(formData.get("name") || "") } : {}),
+      };
       const result = await requestJson<{ user: AuthUser }>(`/api/auth/${authMode}`, {
         method: "POST",
         body: JSON.stringify(body),
       });
       setUser(result.user);
-      setLanguage(result.user.preferred_language);
-      setAuthMode(null);
-      setToast(authMode === "register" ? text.accountReady : `${text.welcome}, ${result.user.name}.`);
-      form.reset();
+      setAuthError("");
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : text.accountFailed);
+      setAuthError(error instanceof Error ? error.message : "The account request could not be completed.");
     } finally {
       setAuthBusy(false);
     }
@@ -333,213 +167,177 @@ function App() {
     try {
       await requestJson<{ user: null }>("/api/auth/logout", { method: "POST" });
       setUser(null);
-      setActivity([]);
-      setHistoryOpen(false);
-      setLanguage("kin");
-      setToast(text.signedOut);
+      setAuthMode("login");
+      setAuthError("");
     } catch (error) {
-      setToast(error instanceof Error ? error.message : text.accountFailed);
+      setAuthError(error instanceof Error ? error.message : "Could not sign out.");
     }
   }
 
-  function openAuth(mode: "login" | "register") {
-    setSelected(null);
-    setAuthError("");
-    setAuthMode(mode);
+  if (authLoading) {
+    return <main className="auth-page"><div className="auth-loading" role="status">Checking your sign-in…</div></main>;
   }
 
-  function changeLanguage(nextLanguage: Language) {
-    setLanguage(nextLanguage);
-    if (!user) return;
-    requestJson<{ preferredLanguage: Language }>("/api/auth/preferences", {
-      method: "PUT",
-      body: JSON.stringify({ preferredLanguage: nextLanguage }),
-    }).catch((error: unknown) => {
-      setToast(error instanceof Error ? error.message : text.accountFailed);
-    });
-  }
-
-  async function openHistory() {
-    setActivityError("");
-    setHistoryOpen(true);
-    try {
-      const records = await requestJson<ServiceActivity[]>("/api/service-activity");
-      setActivity(records);
-    } catch (error) {
-      setActivityError(error instanceof Error ? error.message : text.accountFailed);
-    }
-  }
-
-  function recordIremboLink(serviceId: string) {
-    if (!user) return;
-    requestJson<{ recorded: boolean }>("/api/service-activity", {
-      method: "POST",
-      body: JSON.stringify({ serviceId }),
-    }).catch((error: unknown) => {
-      setToast(error instanceof Error ? error.message : text.accountFailed);
-    });
-  }
-
-  function titleFor(service: Service) {
-    return language === "kin" ? service.title_kin : service.title_en;
-  }
-
-  function categoryFor(service: Service) {
-    return language === "kin" ? service.category_kin : service.category_en;
-  }
-
-  function requirementsFor(service: Service) {
-    return language === "kin" ? service.requirements_kin : service.requirements_en;
-  }
-
-  function serviceIcon(service: Service) {
-    if (service.category_id === "TRANSPORT") return "↗";
-    if (service.category_id === "LAND") return "⌂";
-    if (service.category_id === "JUSTICE") return "§";
-    return "▣";
-  }
-
-  return <div className="portal-shell">
-    <header className="site-header">
-      <a className="portal-brand" href="#home" aria-label="Imboni - urupapuro rw'ibanze">
-        <span className="portal-brand-mark" aria-hidden="true">I</span>
-        <span className="portal-brand-copy"><strong>Imboni</strong><small>Amakuru kuri serivisi zo mu Rwanda</small></span>
-      </a>
-      <nav className="portal-nav" aria-label={language === "kin" ? "Ibikubiye ku rubuga" : "Main navigation"}>
-        <a href="#services">{text.services}</a><a href="#how-it-works">{text.howItWorks}</a><a href="#help">{text.help}</a>
-      </nav>
-      <div className="header-actions">
-        <label className="language-select"><span className="sr-only">{text.language}</span>
-          <select value={language} onChange={(event) => changeLanguage(event.target.value as Language)} aria-label={text.language}>
-            <option value="kin">Kinyarwanda</option><option value="en">English</option>
-          </select>
-        </label>
-        {user
-          ? <><span className="account-greeting">{text.welcomeUser}, {user.name}</span><button className="account-button" type="button" onClick={openHistory}>{text.history}</button><button className="account-button" type="button" onClick={signOut}>{text.signOut}</button></>
-          : <><button className="account-button" type="button" onClick={() => openAuth("login")}>{text.signIn}</button><button className="account-button account-primary" type="button" onClick={() => openAuth("register")}>{text.createAccount}</button></>}
-        <span className="demo-label"><i aria-hidden="true" /> {text.prototype}</span>
-      </div>
-    </header>
-
-    <main id="home">
-      <section className="hero-section">
-        <div className="hero-content">
-          <div className="hero-eyebrow"><span /> {text.eyebrow}</div>
-          <h1>{text.titleFirst}<br /><em>{text.titleSecond}</em></h1>
-          <p>{text.intro}</p>
-          <form className="hero-search" role="search" onSubmit={(event) => { event.preventDefault(); document.getElementById("services")?.scrollIntoView({ behavior: "smooth" }); }}>
-            <label className="sr-only" htmlFor="service-search">{text.search}</label><span aria-hidden="true">⌕</span>
-            <input id="service-search" type="search" placeholder={text.search} value={query} onChange={(event) => { setQuery(event.target.value); setCategory(""); }} />
-            <button type="submit">{text.find} <span aria-hidden="true">→</span></button>
-          </form>
-          <div className="hero-footnote"><span aria-hidden="true">ⓘ</span> {text.independent}</div>
+  if (!user) {
+    const isRegister = authMode === "register";
+    return <main className="auth-page">
+      <section className="auth-card" aria-labelledby="auth-title">
+        <a className="brand auth-brand" href="#overview" aria-label="Kora business control room">
+          <span className="brand-symbol">k<span>.</span></span>
+          <span className="brand-name">kora<small>BUSINESS CONTROL ROOM</small></span>
+        </a>
+        <div className="auth-intro">
+          <span className="auth-eyebrow">YOUR BUSINESS, IN ONE VIEW</span>
+          <h1 id="auth-title">{isRegister ? "Create your account" : "Welcome back"}</h1>
+          <p>{isRegister ? "Set up an account to access your control room." : "Sign in to continue to your business control room."}</p>
         </div>
-        <aside className="hero-side-card" aria-label={text.startHere}>
-          <div className="side-card-top"><span className="side-card-icon" aria-hidden="true">✳</span><span>{text.startHere}</span></div>
-          <h2>{text.unsure}</h2><p>{text.aside}</p><a href="#services">{text.browse} <span aria-hidden="true">↗</span></a>
-          <div className="side-card-rule" /><div className="side-card-note"><span aria-hidden="true">ⓘ</span> {text.demoOnly}</div>
-        </aside>
-        <div className="hero-decoration" aria-hidden="true"><span /><span /><span /></div>
-      </section>
-
-      <section className="trust-strip" aria-label={text.accurate}>
-        <div><span aria-hidden="true">◎</span><span><strong>{text.accurate}</strong><small>{text.accurateSub}</small></span></div>
-        <div><span aria-hidden="true">⌂</span><span><strong>{text.local}</strong><small>{text.localSub}</small></span></div>
-        <div><span aria-hidden="true">♧</span><span><strong>{text.safe}</strong><small>{text.safeSub}</small></span></div>
-      </section>
-
-      <section className="services-section" id="services">
-        <div className="section-heading">
-          <div><div className="section-kicker">{text.browseByNeed}</div><h2>{text.sectionTitle}</h2><p>{text.sectionDescription}</p></div>
-          <span className="service-total" aria-live="polite">{filteredServices.length} {text.resultCount}</span>
-        </div>
-        <div className="catalog-warning" role="note"><strong>{text.warningTitle}</strong><p>{text.warningText}</p></div>
-        <div className="category-list" aria-label={text.category}>
-          <button className={`category-chip ${category === "" ? "selected" : ""}`} type="button" aria-pressed={category === ""} onClick={() => setCategory("")}>{text.allServices}</button>
-          {categories.map((item) => <button key={item.id} className={`category-chip ${category === item.id ? "selected" : ""}`} type="button" aria-pressed={category === item.id} onClick={() => setCategory(item.id)}>{language === "kin" ? item.name_kin : item.name_en}</button>)}
-        </div>
-        {serviceLoading ? <div className="no-services" role="status"><strong>{text.loading}</strong></div>
-          : serviceError ? <div className="no-services" role="alert"><strong>{text.loadError}</strong><p>{serviceError}</p><button type="button" onClick={() => window.location.reload()}>{text.tryAgain}</button></div>
-            : filteredServices.length ? <div className="service-grid">{filteredServices.map((service) => <article className="service-card catalogue-card" key={service.id}>
-              <div className="service-card-top"><span className={`service-icon icon-${service.category_id.toLowerCase()}`} aria-hidden="true">{serviceIcon(service)}</span><span className="service-category">{categoryFor(service)}</span></div>
-              <span className="verification-badge">{text.unverified}</span>
-              <h3>{titleFor(service)}</h3>
-              <p className="catalogue-summary">{language === "kin" ? "Ibisabwa, amafaranga n’igihe ntibyagenzuwe." : "Requirements, fee, and timing have not been verified."}</p>
-              <button className="service-link" type="button" onClick={() => setSelected(service)} aria-label={`${text.openIrembo}: ${titleFor(service)}`}>{text.openIrembo} <span aria-hidden="true">→</span></button>
-            </article>)}</div>
-              : <div className="no-services" role="status"><span aria-hidden="true">⌕</span><strong>{services.length ? text.noResults : text.noData}</strong><p>{text.trySearch}</p><button type="button" onClick={() => { setQuery(""); setCategory(""); }}>{text.allServices}</button></div>}
-        <p className="synthetic-caption">{text.sectionDescription} <a href={iremboCatalogueUrl} target="_blank" rel="noreferrer">{text.openIrembo}</a></p>
-      </section>
-
-      <section className="steps-section" id="how-it-works">
-        <div className="steps-intro"><div className="section-kicker">{text.howItWorks}</div><h2>{text.howTitle}</h2><p>{text.howDescription}</p></div>
-        <ol className="steps-list">
-          <li><span>01</span><div><strong>{text.stepOne}</strong><p>{text.stepOneText}</p></div></li>
-          <li><span>02</span><div><strong>{text.stepTwo}</strong><p>{text.stepTwoText}</p></div></li>
-          <li><span>03</span><div><strong>{text.stepThree}</strong><p>{text.stepThreeText}</p></div></li>
-        </ol>
-      </section>
-
-      <section className="help-section" id="help">
-        <div><div className="section-kicker">{text.needHelp}</div><h2>{text.helpTitle}</h2><p>{text.helpText}</p></div>
-        <a href={iremboCatalogueUrl} target="_blank" rel="noreferrer">{text.openIrembo} <span aria-hidden="true">↗</span></a>
-      </section>
-    </main>
-
-    <footer className="site-footer"><a className="footer-brand" href="#home"><span className="portal-brand-mark" aria-hidden="true">I</span><strong>Imboni</strong></a><p>{text.footer}</p><span className="footer-disclaimer">{text.notAffiliated}</span></footer>
-
-    {selected && <div className="service-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}>
-      <section className="service-modal" role="dialog" aria-modal="true" aria-labelledby="service-modal-title">
-        <div className="modal-header"><div><div className="section-kicker">{categoryFor(selected)}</div><h2 id="service-modal-title">{titleFor(selected)}</h2></div>
-          <button ref={closeRef} className="modal-close" type="button" aria-label={language === "kin" ? "Funga" : "Close"} onClick={() => setSelected(null)}>×</button>
-        </div>
-        <div className="modal-content">
-          <span className="verification-badge">{text.unverified}</span>
-          <div className="guide-notice"><span aria-hidden="true">ⓘ</span><p>{text.warningText}</p></div>
-          <h3>{text.requirements}</h3><p className="catalogue-requirements">{requirementsFor(selected)}</p>
-          <h3>{text.estimate}</h3><p className="catalogue-estimate">{selected.fee_rwf.toLocaleString(language === "kin" ? "rw-RW" : "en-RW")} {text.rwf} · {selected.processing_days} {selected.processing_days === 1 ? text.day : text.days}</p>
-          <a className="provider-button" href={selected.irembo_url} target="_blank" rel="noreferrer" onClick={() => recordIremboLink(selected.id)}>{text.openIrembo} <span aria-hidden="true">↗</span></a>
-          <p className="modal-footnote">{text.externalNote}</p>
-        </div>
-      </section>
-    </div>}
-
-    {historyOpen && <div className="service-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setHistoryOpen(false); }}>
-      <section className="service-modal" role="dialog" aria-modal="true" aria-labelledby="history-title">
-        <div className="modal-header"><div><div className="section-kicker">{text.history}</div><h2 id="history-title">{text.historyTitle}</h2></div>
-          <button ref={historyCloseRef} className="modal-close" type="button" aria-label={language === "kin" ? "Funga" : "Close"} onClick={() => setHistoryOpen(false)}>×</button>
-        </div>
-        <div className="modal-content">
-          <div className="guide-notice"><span aria-hidden="true">ⓘ</span><p>{text.historyNote}</p></div>
-          {activityError ? <p className="auth-error" role="alert">{activityError}</p>
-            : activity.length ? <ol className="activity-list">{activity.map((record) => <li key={record.id}>
-              <strong>{language === "kin" ? record.title_kin : record.title_en}</strong>
-              <span>{text.linkOpened} · {new Date(`${record.created_at.replace(" ", "T")}Z`).toLocaleString(language === "kin" ? "rw-RW" : "en-RW")}</span>
-            </li>)}</ol>
-              : <p className="catalogue-requirements">{text.historyEmpty}</p>}
-        </div>
-      </section>
-    </div>}
-
-    {authMode && <div className="service-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setAuthMode(null); }}>
-      <section className="service-modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-        <div className="modal-header"><div><div className="section-kicker">{text.account}</div><h2 id="auth-title">{authMode === "register" ? text.createAccount : text.welcome}</h2></div>
-          <button ref={authCloseRef} className="modal-close" type="button" aria-label={language === "kin" ? "Funga" : "Close"} onClick={() => setAuthMode(null)}>×</button>
-        </div>
-        <form className="auth-form" onSubmit={submitAuth} noValidate>
-          {authMode === "register" && <label>{text.name}<input name="name" type="text" autoComplete="name" maxLength={80} required /></label>}
-          <label>{text.email}<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
-          <label>{text.password}<input name="password" type="password" autoComplete={authMode === "register" ? "new-password" : "current-password"} minLength={12} maxLength={128} required />
-            <small>{authMode === "register" ? text.passwordHelp : ""}</small></label>
-          {authMode === "register" && <label>{text.confirmPassword}<input name="confirmPassword" type="password" autoComplete="new-password" minLength={12} maxLength={128} required /></label>}
-          <p className="auth-safety-note">{text.accountSafety}</p>
+        <form className="auth-form" onSubmit={submitAuth}>
+          {isRegister && <label>Full name<input name="name" type="text" autoComplete="name" maxLength={80} required /></label>}
+          <label>Email address<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
+          <label>Password<input name="password" type="password" autoComplete={isRegister ? "new-password" : "current-password"} minLength={12} maxLength={128} required /><small>Use 12–128 characters.</small></label>
+          {isRegister && <label>Confirm password<input name="confirmPassword" type="password" autoComplete="new-password" minLength={12} maxLength={128} required /></label>}
           {authError && <p className="auth-error" role="alert">{authError}</p>}
-          <button className="provider-button" type="submit" disabled={authBusy}>{authBusy ? text.wait : authMode === "register" ? text.create : text.signIn}</button>
-          <p className="auth-switch">{authMode === "register" ? text.alreadyAccount : text.newAccount} <button type="button" onClick={() => { setAuthError(""); setAuthMode(authMode === "register" ? "login" : "register"); }}>{authMode === "register" ? text.signIn : text.createAccount}</button></p>
+          <button className="button button-primary auth-submit" type="submit" disabled={authBusy}>
+            {authBusy ? "Please wait…" : isRegister ? "Create account" : "Sign in"}
+          </button>
         </form>
+        <p className="auth-switch">{isRegister ? "Already have an account?" : "New to Kora?"}{" "}
+          <button type="button" onClick={() => { setAuthMode(isRegister ? "login" : "register"); setAuthError(""); }}>
+            {isRegister ? "Sign in" : "Create account"}
+          </button>
+        </p>
+        <p className="auth-data-note"><strong>Prototype notice</strong> The dashboard uses synthetic sample data only. Do not enter real financial, customer, staff, or other sensitive information.</p>
       </section>
-    </div>}
-    <div className={`portal-toast ${toast ? "visible" : ""}`} role="status" aria-live="polite">{toast}</div>
+    </main>;
+  }
+
+  return <div className="control-room">
+    <aside className={`sidebar ${mobileNavOpen ? "sidebar-open" : ""}`}>
+      <a className="brand" href="#overview" onClick={() => selectNavigation("Overview")} aria-label="Kora control room home">
+        <span className="brand-symbol">k<span>.</span></span>
+        <span className="brand-name">kora<small>BUSINESS CONTROL ROOM</small></span>
+      </a>
+      <div className="workspace-switcher">
+        <span className="workspace-avatar">K</span>
+        <span className="workspace-copy"><strong>Kora Collective</strong><small>Business workspace</small></span>
+        <span className="workspace-chevron" aria-hidden="true">⌄</span>
+      </div>
+      <div className="nav-heading">WORKSPACE</div>
+      <nav className="side-nav" aria-label="Control room sections">
+        {navigation.map((item) => <a key={item.name} href={item.href} className={activeNav === item.name ? "nav-link nav-link-active" : "nav-link"} onClick={() => selectNavigation(item.name)}>
+          <Icon name={item.icon} size={17} /><span>{item.name}</span>
+          {item.name === "Operations" && <span className="nav-count">3</span>}
+        </a>)}
+      </nav>
+      <div className="sidebar-bottom">
+        <div className="help-card"><span className="help-spark">✳</span><strong>Need a hand?</strong><p>Your workspace guide is here whenever you need it.</p><button type="button" onClick={() => setNoticeOpen(true)}>Open help center <span aria-hidden="true">→</span></button></div>
+        <a className="nav-link settings-link" href="#settings" onClick={() => selectNavigation("Settings")}><Icon name="settings" size={17} /><span>Settings</span></a>
+        <div className="profile"><span className="profile-avatar">{getInitials(user.name)}</span><span className="profile-copy"><strong>{user.name}</strong><small>{user.email}</small></span><button className="profile-menu" type="button" onClick={signOut}>Sign out</button></div>
+      </div>
+    </aside>
+
+    {mobileNavOpen && <button className="sidebar-scrim" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />}
+    <main className="main-panel" id="overview">
+      <header className="topbar">
+        <button className="mobile-menu" type="button" aria-label={mobileNavOpen ? "Close menu" : "Open menu"} onClick={() => setMobileNavOpen(!mobileNavOpen)}><Icon name={mobileNavOpen ? "close" : "menu"} /></button>
+        <div className="breadcrumb"><span>Workspace</span><span className="crumb-slash">/</span><strong>{activeNav}</strong></div>
+        <div className="topbar-actions">
+          <label className="search-box"><Icon name="search" size={16} /><span className="sr-only">Search workspace</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search anything..." /><kbd>⌘ K</kbd></label>
+          <div className="notice-wrap"><button className="icon-button notification-button" type="button" aria-label="Notifications" aria-expanded={noticeOpen} onClick={() => setNoticeOpen(!noticeOpen)}><Icon name="bell" size={18} /><i /></button>
+            {noticeOpen && <div className="notification-popover"><strong>You're all caught up</strong><p>New updates will appear here.</p><button type="button" onClick={() => setNoticeOpen(false)}>Dismiss</button></div>}
+          </div>
+          <span className="topbar-divider" />
+          <button className="topbar-user topbar-signout" type="button" aria-label="Sign out" onClick={signOut}>{getInitials(user.name)}</button>
+        </div>
+      </header>
+
+      <div className="dashboard-content">
+        <div className="page-heading">
+          <div><div className="date-line"><span className="live-dot" /> SATURDAY, OCTOBER 31, 2026 <span className="sample-pill">SAMPLE DATA</span></div>
+            <h1>Good morning, {user.name.split(/\s+/)[0]} <span aria-hidden="true">✦</span></h1>
+            <p>Here’s what’s happening across your business today.</p></div>
+          <div className="heading-actions"><button type="button" className="button button-secondary period-button"><Icon name="clock" size={15} /><select aria-label="Dashboard time period" value={period} onChange={(event) => setPeriod(event.target.value)}><option>7 days</option><option>30 days</option><option>90 days</option></select><span className="select-chevron">⌄</span></button><button type="button" className="button button-primary" onClick={exportReport}><Icon name="download" size={15} /> Export report</button></div>
+        </div>
+
+        <section className="kpi-grid" aria-label="Business performance summary">
+          {kpis.map((item) => <article className="kpi-card" key={item.label}>
+            <div className="kpi-card-top"><span>{item.label}</span><span className={`kpi-icon ${item.tone}`}><Icon name={item.icon} size={17} /></span></div>
+            <div className="kpi-value">{item.value}</div><div className="kpi-foot"><span className="positive-change">↗ {item.change}</span><span>{item.note}</span></div>
+          </article>)}
+        </section>
+
+        <section className="primary-grid" aria-label="Financial and sales overview">
+          <article className="panel revenue-panel" id="financials">
+            <div className="panel-header"><div><div className="panel-kicker">FINANCIAL OVERVIEW</div><h2>Revenue performance</h2></div><button className="more-button" type="button" aria-label="More revenue options">•••</button></div>
+            <div className="revenue-summary"><strong>RWF 48,240,000</strong><span className="positive-change">↗ 12.8%</span><small>vs. previous {period}</small></div>
+            <div className="chart-legend"><span><i className="legend-current" /> This period</span><span><i className="legend-previous" /> Previous period</span></div>
+            <div className="chart-container" role="img" aria-label={`Revenue trend over the last ${period}; values generally rise through the period.`}>
+              <div className="chart-y-labels"><span>RWF 60M</span><span>RWF 40M</span><span>RWF 20M</span><span>RWF 0</span></div>
+              <svg className="revenue-chart" viewBox="0 0 640 200" preserveAspectRatio="none" aria-hidden="true">
+                <defs><linearGradient id="revenue-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#2b8a69" stopOpacity=".17" /><stop offset="100%" stopColor="#2b8a69" stopOpacity="0" /></linearGradient></defs>
+                <path className="chart-gridline" d="M24 42H622M24 86H622M24 130H622M24 176H622" />
+                <path className="previous-line" d="M24 145 79 141 134 153 189 132 244 140 299 117 354 130 409 108 464 115 519 94 574 103 622 83" />
+                <polygon points={`24,176 ${chartPoints} 629,176`} fill="url(#revenue-fill)" />
+                <polyline className="current-line" points={chartPoints} />
+                <circle className="chart-point" cx="629" cy={176 - trendValues[period].at(-1)! * 1.48} r="4" />
+              </svg>
+              <div className="chart-x-labels"><span>Oct 01</span><span>Oct 07</span><span>Oct 13</span><span>Oct 19</span><span>Oct 25</span><span>Oct 31</span></div>
+            </div>
+          </article>
+          <article className="panel sales-panel" id="sales">
+            <div className="panel-header"><div><div className="panel-kicker">SALES &amp; MARKETING</div><h2>Revenue by channel</h2></div><button className="more-button" type="button" aria-label="More channel options">•••</button></div>
+            <div className="channel-total"><strong>RWF 48.2M</strong><span>total revenue</span></div>
+            <div className="channel-chart" role="img" aria-label="Revenue channels: Direct sales 42 percent, Partnerships 28 percent, Digital 19 percent, and Other 11 percent.">
+              <div className="donut-chart"><div className="donut-hole"><strong>42%</strong><span>Direct</span></div></div>
+              <ul className="channel-legend">
+                <li><i className="channel-dot direct" /><span>Direct sales</span><strong>42%</strong></li>
+                <li><i className="channel-dot partner" /><span>Partnerships</span><strong>28%</strong></li>
+                <li><i className="channel-dot digital" /><span>Digital</span><strong>19%</strong></li>
+                <li><i className="channel-dot other" /><span>Other</span><strong>11%</strong></li>
+              </ul>
+            </div>
+            <a className="panel-link" href="#sales" onClick={() => selectNavigation("Sales & marketing")}>View sales report <Icon name="arrow" size={14} /></a>
+          </article>
+        </section>
+
+        <section className="lower-grid" aria-label="Operations, team, and growth">
+          <article className="panel operations-panel" id="operations">
+            <div className="panel-header"><div><div className="panel-kicker">BUSINESS OPERATIONS</div><h2>Operational pulse</h2></div><span className="status-tag"><i /> On track</span></div>
+            <div className="operation-list">
+              <div className="operation-row"><span className="operation-symbol ops-green">✓</span><span className="operation-copy"><strong>Service delivery</strong><small>On-time completion</small></span><strong className="operation-value">96.8%</strong></div>
+              <div className="operation-row"><span className="operation-symbol ops-blue">↗</span><span className="operation-copy"><strong>Open opportunities</strong><small>Across active pipeline</small></span><strong className="operation-value">24</strong></div>
+              <div className="operation-row"><span className="operation-symbol ops-gold">◷</span><span className="operation-copy"><strong>Pending decisions</strong><small>Items need your review</small></span><strong className="operation-value attention">3</strong></div>
+            </div>
+            <a className="panel-link" href="#operations" onClick={() => selectNavigation("Operations")}>View operations <Icon name="arrow" size={14} /></a>
+          </article>
+          <article className="panel team-panel" id="team">
+            <div className="panel-header"><div><div className="panel-kicker">PEOPLE &amp; DELIVERY</div><h2>Team priorities</h2></div><button className="more-button" type="button" aria-label="More team options">•••</button></div>
+            <div className="team-list">{team.map((member) => <div className="team-row" key={member.name}>
+              <span className={`team-avatar ${member.color}`}>{member.initials}</span><span className="team-copy"><strong>{member.name}</strong><small>{member.role}</small></span><span className="team-progress"><span><i style={{ width: `${member.progress}%` }} /></span><small>{member.progress}%</small></span>
+            </div>)}</div>
+            <a className="panel-link" href="#team" onClick={() => selectNavigation("Team")}>View team overview <Icon name="arrow" size={14} /></a>
+          </article>
+          <article className="panel growth-panel" id="growth">
+            <div className="panel-header"><div><div className="panel-kicker">STRATEGIC GROWTH</div><h2>Growth objective</h2></div><span className="growth-icon"><Icon name="compass" size={17} /></span></div>
+            <div className="growth-title"><strong>Expand regional reach</strong><span>Q4 priority</span></div>
+            <p className="growth-description">Build new partnerships and strengthen customer reach across priority markets.</p>
+            <div className="growth-progress-label"><span>Quarterly progress</span><strong>68%</strong></div>
+            <div className="growth-progress"><span /></div>
+            <div className="growth-footer"><span>3 of 5 milestones complete</span><a href="#growth" onClick={() => selectNavigation("Strategic growth")}>Review <span aria-hidden="true">→</span></a></div>
+          </article>
+        </section>
+
+        <section className="panel activity-panel" aria-label="Recent business activity">
+          <div className="panel-header"><div><div className="panel-kicker">WORKSPACE UPDATES</div><h2>Recent activity</h2></div><button className="text-button" type="button" onClick={() => setNoticeOpen(true)}>See all activity <Icon name="arrow" size={14} /></button></div>
+          <div className="activity-list">{activities.filter((item) => !search || `${item.title} ${item.detail}`.toLowerCase().includes(search.toLowerCase())).map((item) => <div className="activity-row" key={item.title}>
+            <span className={`activity-avatar ${item.color}`}>{item.initials}</span><span className="activity-copy"><strong>{item.title}</strong><small>{item.detail}</small></span><span className="activity-time">{item.time}</span>
+          </div>)}
+            {search && !activities.some((item) => `${item.title} ${item.detail}`.toLowerCase().includes(search.toLowerCase())) && <p className="empty-search">No recent activity matches “{search}”.</p>}
+          </div>
+        </section>
+        <footer className="dashboard-footer"><span>© 2026 Kora Collective</span><span><i /> All figures are illustrative sample data and are not connected to live systems.</span><a href="#settings">Privacy &amp; data</a></footer>
+      </div>
+    </main>
   </div>;
 }
 
